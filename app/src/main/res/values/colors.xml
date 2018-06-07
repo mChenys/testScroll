@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+    <color name="bookshelf_head_statistics_type">#FF8523</color>
+    <color name="color_666666">#666666</color>
+    <color name="transparent">#00000000</color>
+    <color name="gray_feedback">#DFDFDF</color>
+    <color name="white">#ffffff</color>
+    <color name="color_ff8523">#ff8523</color>
+</resources>

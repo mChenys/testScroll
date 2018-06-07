@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             xmlns:app="http://schemas.android.com/apk/res-auto"
+             android:layout_width="match_parent"
+             android:layout_height="match_parent">
+
+    <mchenys.net.csdn.blog.testscroll.view.RefreshLayout
+        android:id="@+id/refreshLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!--下拉刷新-->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:layout_marginTop="-101dp"
+            android:gravity="bottom|center"
+            android:text="我是刷新头"
+            android:textSize="20sp"/>
+
+
+        <mchenys.net.csdn.blog.testscroll.view.MyNestedScrollParent
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <!--焦点图-->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="180dp">
+
+                <mchenys.net.csdn.blog.testscroll.view.ImageViewPager
+                    android:id="@+id/imageview"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#cccccc"
+                    android:src="@drawable/ic_default"/>
+
+                <mchenys.net.csdn.blog.testscroll.view.FocusCircleView
+                    android:id="@+id/FocusCircleView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
+                    android:layout_marginBottom="10dp"
+                    android:gravity="center"/>
+            </RelativeLayout>
+
+            <!--导航栏-->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <mchenys.net.csdn.blog.testscroll.view.pageindicator.TabPageIndicator
+                    android:id="@+id/tab_indicator"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    />
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:background="@drawable/ic_right_layer"/>
+            </RelativeLayout>
+
+            <android.support.v4.view.ViewPager
+                android:id="@+id/vp"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+        </mchenys.net.csdn.blog.testscroll.view.MyNestedScrollParent>
+    </mchenys.net.csdn.blog.testscroll.view.RefreshLayout>
+
+
+</FrameLayout>
