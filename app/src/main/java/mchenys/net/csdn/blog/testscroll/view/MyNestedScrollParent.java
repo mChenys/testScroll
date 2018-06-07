@@ -60,6 +60,8 @@ public class MyNestedScrollParent extends LinearLayout implements NestedScrollin
     //在此可以判断参数target是哪一个子view以及滚动的方向，然后决定是否要配合其进行嵌套滚动
     @Override
     public boolean onStartNestedScroll(View child, View target, int nestedScrollAxes) {
+        mTarget = target;
+
         Log.e("cys", "onStartNestedScroll-> target:" + target);
         return target instanceof NestedScrollingChild;
     }
@@ -67,7 +69,6 @@ public class MyNestedScrollParent extends LinearLayout implements NestedScrollin
 
     @Override
     public void onNestedScrollAccepted(View child, View target, int nestedScrollAxes) {
-        mTarget = target;
         mNestedScrollingParentHelper.onNestedScrollAccepted(child, target, nestedScrollAxes);
     }
 
@@ -95,7 +96,7 @@ public class MyNestedScrollParent extends LinearLayout implements NestedScrollin
             scrollBy(0, dy);//滚动
             consumed[1] = dy;//告诉child我消费了多少
         }
-        if(getScrollY()==0){
+        if (getScrollY() == 0) {
             //向下滑动mTarget带动parent完全划出,继续向下滑需要划出parent的parent
             getParent().requestDisallowInterceptTouchEvent(false);
         }
@@ -114,7 +115,7 @@ public class MyNestedScrollParent extends LinearLayout implements NestedScrollin
     @Override
     public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed) {
         Log.e("cys", "onNestedScroll-> dyUnconsumed:" + dyUnconsumed + " dyConsumed:" + dyConsumed);
-        if (dyUnconsumed > 0) {
+        if (dyUnconsumed > 0 && mTarget.canScrollVertically(1)) {
             // 如果子View还有未消费的,可以继续消费
             scrollBy(0, dyUnconsumed);//滚动
         }
@@ -150,7 +151,7 @@ public class MyNestedScrollParent extends LinearLayout implements NestedScrollin
 
     //下拉的时候是否要向下滚动以显示顶部
     public boolean showTopView(int dy, View target) {
-        if (dy > 0) {
+        if (dy > 0 && mTopView.isShown()) {
             if (target instanceof NestedScrollingChild) {
                 if (getScrollY() > 0 &&/* target.getScrollY() == 0*/ !target.canScrollVertically(-1)) {
                     return true; //显示顶部
@@ -162,15 +163,13 @@ public class MyNestedScrollParent extends LinearLayout implements NestedScrollin
 
     //上拉的时候，是否要向上滚动，隐藏图片
     public boolean hideTopView(int dy) {
-        if (dy < 0) {
+        if (dy < 0 && mTopView.isShown()) {
             if (getScrollY() < topViewHeight) {
                 return true;
             }
         }
         return false;
     }
-
-
 
     //scrollBy内部会调用scrollTo
     //限制滚动范围
@@ -188,9 +187,10 @@ public class MyNestedScrollParent extends LinearLayout implements NestedScrollin
 
 
     public void fling(int velocityY) {
-        mScroller.fling(0, getScrollY(), 0, velocityY, 0, 0, 0, topViewHeight);
-        invalidate();
-
+        if (mTopView.isShown()) {
+            mScroller.fling(0, getScrollY(), 0, velocityY, 0, 0, 0, topViewHeight);
+            invalidate();
+        }
     }
 
     @Override
@@ -226,31 +226,39 @@ public class MyNestedScrollParent extends LinearLayout implements NestedScrollin
                 int y = (int) (event.getRawY());
                 int dy = y - lastY;
                 lastY = y;
-                if (!mTarget.canScrollVertically(-1)) {
-                    scrollBy(0, -dy); //mTarget处于顶部不能继续下滑的时候才能滑该View自己
-                    Log.e("cys", "ACTION_MOVE getScrollY:" + getScrollY());
+                //首次点击或者滑动的不是NestedScrollChild的时候是拿不到target的
+                if (null != mTarget) {
+                    if (!mTarget.canScrollVertically(-1)) {
+                        scrollBy(0, -dy); //mTarget处于顶部不能继续下滑的时候才能滑该View自己
+                        Log.e("cys", "ACTION_MOVE getScrollY:" + getScrollY());
+                    } else {
+                        Log.e("cys", "scrollBy 需要传给mTarget");
+                        mTarget.onTouchEvent(event);
+                        return true;
+                    }
+                    //解决当该View已经拦截了事件,而mPinkView已经固定,仍然继续上滑时需要划出mTarget
+                    if (shouldIntercept && getScrollY() == topViewHeight) {
+                        // Log.e("cys", "ACTION_MOVE 需要传给mTarget");
+                        mTarget.onTouchEvent(event);
+                    }
                 } else {
-                    Log.e("cys", "scrollBy 需要传给mTarget");
-                    mTarget.onTouchEvent(event);
-                    return true;
+                    scrollBy(0, -dy);
                 }
 
-                //解决当该View已经拦截了事件,而mPinkView已经固定,仍然继续上滑时需要划出mTarget
-                if (shouldIntercept && getScrollY() == topViewHeight) {
-                   // Log.e("cys", "ACTION_MOVE 需要传给mTarget");
-                    mTarget.onTouchEvent(event);
-                }
 
                 break;
             case MotionEvent.ACTION_UP:
                 mVelocityTracker.computeCurrentVelocity(1000);
                 int vy = (int) mVelocityTracker.getYVelocity();
-                //解决当该View已经拦截了事件,飞划mTarget有效果
-                if (shouldIntercept && getScrollY() == topViewHeight) {
-                    Log.e("cys", "ACTION_UP 需要传给mTarget");
-                    mTarget.onTouchEvent(event);
-                    return true;
+                if (null != mTarget) {
+                    //解决当该View已经拦截了事件,飞划mTarget有效果
+                    if (shouldIntercept && getScrollY() == topViewHeight) {
+                        Log.e("cys", "ACTION_UP 需要传给mTarget");
+                        mTarget.onTouchEvent(event);
+                        return true;
+                    }
                 }
+
                 fling(-vy);
 
                 break;
@@ -280,17 +288,17 @@ public class MyNestedScrollParent extends LinearLayout implements NestedScrollin
                 lastX = (int) ev.getRawX();
                 lastY = (int) ev.getRawY();
 
-                if (isVerticalScroll) {
+                if (isVerticalScroll && mTopView.isShown()) {
                     if (isPullUp) { //上拉
                         if (getScrollY() >= 0 && getScrollY() < topViewHeight) {
                             //target到顶不能往下滑动时,让父View拦截
-                            shouldIntercept = !mTarget.canScrollVertically(-1);
+                            shouldIntercept = null != mTarget ? !mTarget.canScrollVertically(-1) : true;
                         }
 
                     } else { //下拉
                         if (getScrollY() > 0 && getScrollY() <= topViewHeight) {
                             //target到顶不能往下滑动时,让父View拦截
-                            shouldIntercept = !mTarget.canScrollVertically(-1);
+                            shouldIntercept = null != mTarget ? !mTarget.canScrollVertically(-1) : true;
                         }
                     }
 
@@ -302,5 +310,18 @@ public class MyNestedScrollParent extends LinearLayout implements NestedScrollin
         }
         Log.e("cys", "onInterceptTouchEvent->" + shouldIntercept);
         return shouldIntercept;
+    }
+
+    public boolean canIntercept(boolean isPullingDown) {
+        if (null != mTarget) {
+            if (isPullingDown) {
+                return !mTarget.canScrollVertically(-1) && getScrollY() == 0;
+            } else {
+                return false;
+            }
+        } else {
+            return getScrollY() == 0;
+        }
+
     }
 }
